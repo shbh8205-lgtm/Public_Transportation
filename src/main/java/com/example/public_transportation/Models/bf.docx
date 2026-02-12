@@ -1,0 +1,209 @@
+// --- Start of: Bus.java ---
+package com.example.public_transportation.Models;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Entity
+public class Bus {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+    private String licence_plate;
+    private int seats;
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Models\Bus.java
+
+// --- Start of: Driver.java ---
+package com.example.public_transportation.Models;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Entity
+public class Driver {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+    private String name;
+    private String phone;
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Models\Driver.java
+
+// --- Start of: Line.java ---
+package com.example.public_transportation.Models;
+import java.util.List;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import jakarta.persistence.Entity;
+import lombok.Data;
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Entity
+public class Line {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+    private String number;
+    private String source;
+    private String destination;
+    @OneToMany(mappedBy = "line")
+    @OrderBy("stopOrder ASC") // דואג שהרשימה תמיד תהיה מסודרת לפי סדר התחנות
+    private List<Station_Line> stations;
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Models\Line.java
+
+// --- Start of: Station_Line.java ---
+package com.example.public_transportation.Models;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapsId;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Entity
+public class Station_Line {
+    @EmbeddedId
+    private StationLineKey id;
+    @ManyToOne
+    @MapsId("stationId")
+    @JoinColumn(name = "station_id")
+    private Station station;
+    @ManyToOne
+    @MapsId("lineId")
+    @JoinColumn(name = "line_id")
+    private Line line;
+    private int stationOrder;
+    public Station_Line(Station station, Line line, int order) {
+        this.station = station;
+        this.line = line;
+        this.stationOrder = order;
+        this.id = new StationLineKey(station.getId(), line.getId());
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Models\Station_Line.java
+
+// --- Start of: Station.java ---
+package com.example.public_transportation.Models;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.Data;
+import java.util.List;
+import jakarta.persistence.Entity;
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Entity
+public class Station {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+    private String name;
+    private int number;
+    @OneToMany(mappedBy = "station")
+    private List<Station_Line> lines;
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Models\Station.java
+
+// --- Start of: StationLineKey.java ---
+package com.example.public_transportation.Models;
+import java.io.Serializable;
+import java.util.Objects;
+import jakarta.persistence.Embeddable;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Embeddable // אנוטציה קריטית - אומרת שזה חלק מישות אחרת
+public class StationLineKey implements Serializable {
+    private int stationId;
+    private int lineId;
+    // חובה ב-JPA להגדיר equals ו-hashCode עבור מפתחות מורכבים
+    // ה-@Data של Lombok עושה את זה, אבל הנה המימוש למקרה שצריך:
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        StationLineKey that = (StationLineKey) o;
+        return stationId == that.stationId && lineId == that.lineId;
+    }
+    @Override
+    public int hashCode() {
+        return Objects.hash(stationId, lineId);
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Models\StationLineKey.java
+
+// --- Start of: Travel.java ---
+package com.example.public_transportation.Models;
+import java.time.LocalTime;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Entity
+public class Travel {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+    private LocalTime departure_Time;
+    @ManyToOne
+    private Bus bus;
+    @ManyToOne
+    private Driver driver;
+    @ManyToOne
+    private Line line;
+    public LocalTime calculateArrivalTime(int stopOrder) {
+        return departure_Time.plusMinutes(stopOrder - 1);
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Models\Travel.java
+

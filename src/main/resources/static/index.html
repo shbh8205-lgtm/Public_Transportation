@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ניהול תחבורה ציבורית</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #f0f2f5;
+            direction: rtl;
+        }
+
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            background: #34495e;
+            padding: 10px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        button {
+            padding: 8px 15px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        .add-btn {
+            background: #27ae60;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: right;
+        }
+
+        th {
+            background: #f8f9fa;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 25px;
+            width: 40%;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+        }
+
+        .easyline-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>מערכת ניהול תחבורה ציבורית</h1>
+    </header>
+
+    <nav>
+        <button onclick="currentView='buses'; loadData('/buses/all', 'אוטובוסים')">אוטובוסים</button>
+        <button onclick="currentView='lines'; loadData('/lines/all', 'קווים')">קווים</button>
+        <button onclick="currentView='drivers'; loadData('/drivers/all', 'נהגים')">נהגים</button>
+        <button onclick="currentView='stations'; loadData('/stations/all', 'תחנות')">תחנות</button>
+        <button onclick="showEasyLineUI()" style="background: #e67e22;">שאילתות קל-קו</button>
+    </nav>
+
+    <div class="container">
+        <div class="card">
+            <h2 id="viewTitle">ברוכים הבאים</h2>
+            <button id="addBtn" class="add-btn" style="display:none;" onclick="showModal()">+ הוסף חדש</button>
+            <div id="tableContainer">אנא בחר קטגוריה מהתפריט למעלה</div>
+        </div>
+    </div>
+
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">הוסף נתון חדש</h3>
+            <div id="formFields"></div>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button onclick="submitForm()" style="background: #27ae60; flex: 1;">שמור</button>
+                <button onclick="closeModal()" style="background:#e74c3c; flex: 1;">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentView = '';
+        let currentEndpoint = '';
+
+        async function loadData(endpoint, title) {
+            currentEndpoint = endpoint;
+            currentView = endpoint.split('/')[1];
+            document.getElementById('viewTitle').innerText = title;
+            document.getElementById('addBtn').style.display = 'block';
+            const container = document.getElementById('tableContainer');
+            container.innerHTML = "טוען נתונים...";
+
+            try {
+                const response = await fetch(endpoint);
+                const data = await response.json();
+                renderTable(data);
+            } catch (e) { container.innerHTML = "שגיאה בחיבור לשרת. וודא שה-Backend רץ."; }
+        }
+
+        function renderTable(data) {
+            if (!data || !data.length) {
+                document.getElementById('tableContainer').innerHTML = "אין נתונים להצגה";
+                return;
+            }
+            let html = `<table><thead><tr>`;
+            // כותרות
+            Object.keys(data[0]).forEach(k => {
+                if (typeof data[0][k] !== 'object' || k === 'line' || k === 'station') html += `<th>${k}</th>`;
+            });
+            html += `</tr></thead><tbody>`;
+
+            data.forEach(row => {
+                html += `<tr>`;
+                Object.keys(row).forEach(k => {
+                    if (typeof row[k] !== 'object') {
+                        html += `<td>${row[k]}</td>`;
+                    } else if (k === 'line') {
+                        html += `<td>${row[k].number}</td>`; // מציג את מספר הקו במקום [object Object]
+                    } else if (k === 'station') {
+                        html += `<td>${row[k].name}</td>`; // מציג את שם התחנה
+                    }
+                });
+                html += `</tr>`;
+            });
+            document.getElementById('tableContainer').innerHTML = html + `</tbody></table>`;
+        }
+
+        function showModal() {
+            const fields = document.getElementById('formFields');
+            const modalTitle = document.getElementById('modalTitle');
+            fields.innerHTML = '';
+
+            if (currentView === 'buses') {
+                modalTitle.innerText = "הוספת אוטובוס";
+                fields.innerHTML = `
+                    <label>מספר רישוי:</label><input id="licence_plate" type="text">
+                    <label>מספר מושבים:</label><input id="seats" type="number">`;
+            } else if (currentView === 'drivers') {
+                modalTitle.innerText = "הוספת נהג";
+                fields.innerHTML = `<label>שם מלא:</label>
+    <input id="name" type="text" placeholder="הכנס שם מלא">
+    <label>טלפון:</label>
+    <input id="phone" type="tel" placeholder="05X-XXXXXXX">`;
+            } else if (currentView === 'stations') {
+                modalTitle.innerText = "הוספת תחנה";
+                fields.innerHTML = `
+                    <label>מספר תחנה:</label><input id="stationNumber" type="number">
+                    <label>מיקום:</label><input id="location" type="text">`;
+            } else if (currentView === 'lines') {
+                modalTitle.innerText = "הוספת קו חדש";
+                fields.innerHTML = `
+                    <label>מספר קו:</label><input id="line_number" type="number">
+                    <label>תחנת מוצא:</label><input id="source" type="text">
+                    <label>תחנת יעד:</label><input id="destination" type="text">`;
+            }
+            document.getElementById('myModal').style.display = 'block';
+        }
+
+        async function submitForm() {
+            let body = {};
+            let url = currentEndpoint.replace('/all', '/add');
+
+            try {
+                if (currentView === 'buses') {
+                    body = {
+                        licence_plate: document.getElementById('licence_plate').value,
+                        seats: parseInt(document.getElementById('seats').value)
+                    };
+                } else if (currentView === 'drivers') {
+                    body = { name: document.getElementById('name').value,
+                        phone: document.getElementById('phone').value
+                     };
+                } else if (currentView === 'stations') {
+                    body = {
+                        number: parseInt(document.getElementById('stationNumber').value),
+                        name: document.getElementById('location').value
+                    };
+                } else if (currentView === 'lines') {
+                    body = {
+                        number: parseInt(document.getElementById('line_number').value),
+                        source: document.getElementById('source').value,
+                        destination: document.getElementById('destination').value
+                    };
+                }
+
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (res.ok) {
+                    alert("נוסף בהצלחה!");
+                    closeModal();
+                    loadData(currentEndpoint, document.getElementById('viewTitle').innerText);
+                } else {
+                    alert("שגיאה מהשרת: " + res.status);
+                }
+            } catch (e) {
+                alert("שגיאה בשליחת הטופס: " + e.message);
+            }
+        }
+
+        function closeModal() { document.getElementById('myModal').style.display = 'none'; }
+
+        function showEasyLineUI() {
+            document.getElementById('viewTitle').innerText = "שאילתות קל-קו (EasyLine)";
+            document.getElementById('addBtn').style.display = 'none';
+            document.getElementById('tableContainer').innerHTML = `
+                <div class="easyline-section" style="background: #ebf5fb;">
+                    <h3>מתי הקו מגיע לתחנה?</h3>
+                    <input id="q_lineNum" type="number" placeholder="מספר קו">
+                    <input id="q_stationNum" type="number" placeholder="מספר תחנה">
+                    <button onclick="getArrivalTime()">בדוק זמן הגעה</button>
+                    <p id="res_arrival"></p>
+                </div>
+
+                <div class="easyline-section" style="background: #e8f8f5;">
+                    <h3>רשימת תחנות בקו</h3>
+                    <input id="q_lineSearch" type="number" placeholder="מספר קו">
+                    <button onclick="getStationsByLine()">הצג תחנות</button>
+                    <div id="res_stations"></div>
+                </div>
+
+                <div class="easyline-section">
+                    <h3>מידע נוסף</h3>
+                    <button onclick="getLastTripOfTheDay()">הנסיעה האחרונה היום</button>
+                    <button onclick="loadData('/easyline/alltrips', 'כל הנסיעות')" style="background:#7f8c8d">כל הנסיעות במערכת</button>
+                    <p id="res_lastTrip"></p>
+                </div>
+                <div class="easyline-section" style="background: #fef9e7;">
+    <h3>לוח זמנים - נסיעות לפי שעה</h3>
+    <input id="q_hour" type="time" step="1"> <button onclick="getTripsByHour()">חפש נסיעות</button>
+    <div id="res_trips"></div>
+</div>
+
+<div class="easyline-section" style="background: #f4ecf7;">
+    <h3>איפה האוטובוסים עכשיו? (לפי קו)</h3>
+    <input id="q_lineLoc" type="number" placeholder="הכנס מספר קו">
+    <button onclick="getBusLocations()">אתר אוטובוסים</button>
+    <div id="res_locations"></div>
+</div>
+            `;
+        }
+
+        async function getArrivalTime() {
+            const line = document.getElementById('q_lineNum').value;
+            const station = document.getElementById('q_stationNum').value;
+            const resDiv = document.getElementById('res_arrival');
+            try {
+                const res = await fetch(`/easyline/findbystation?stationNumber=${station}&lineNumber=${line}`);
+                const text = await res.text();
+                resDiv.innerText = res.ok ? "זמן הגעה: " + text : "שגיאה: " + text;
+            } catch (e) { resDiv.innerText = "שגיאה בחיבור"; }
+        }
+
+        async function getStationsByLine() {
+            const line = document.getElementById('q_lineSearch').value;
+            const resDiv = document.getElementById('res_stations');
+            try {
+                const res = await fetch(`/easyline/getstationsbyline?lineNumber=${line}`);
+                const data = await res.json();
+                let html = "<ul>";
+                data.forEach(s => {
+                    // שים לב: במודל Station שלך השדה הוא 'name' ולא 'location'
+                    html += `<li>${s.station.name} (סדר: ${s.stationOrder})</li>`;
+                });
+                resDiv.innerHTML = html + "</ul>";
+            } catch (e) { resDiv.innerHTML = "לא נמצאו תחנות לקו זה"; }
+        }
+
+        async function getLastTripOfTheDay() {
+            const resDiv = document.getElementById('res_lastTrip');
+            try {
+                const res = await fetch(`/easyline/lasttrip`);
+                const data = await res.json();
+                // ב-Java השדה הוא departure_Time, ב-JSON הוא לרוב יהיה departure_Time או departureTime
+                resDiv.innerText = "הנסיעה האחרונה ב: " + (data.departure_Time || data.departureTime);
+            } catch (e) { resDiv.innerText = "לא נמצאו נסיעות"; }
+        }
+
+        async function getBusLocations() {
+            const lineNum = document.getElementById('q_lineLoc').value;
+            const resDiv = document.getElementById('res_locations');
+            try {
+                const res = await fetch(`/easyline/bus-locations?lineNumber=${lineNum}`);
+                const data = await res.json();
+
+                let html = "<table><tr><th>לוחית רישוי</th><th>תחנה קרובה</th></tr>";
+                data.forEach(bus => {
+                    html += `<tr><td>${bus.licencePlate}</td><td>${bus.currentStationName}</td></tr>`;
+                });
+                resDiv.innerHTML = html + "</table>";
+            } catch (e) { resDiv.innerText = "לא נמצאו אוטובוסים פעילים לקו זה"; }
+        }
+
+        async function getTripsByHour() {
+            const hour = document.getElementById('q_hour').value;
+            const resDiv = document.getElementById('res_trips');
+            try {
+                const res = await fetch(`/easyline/gettripsbyhour?hour=${hour}`);
+                const data = await res.json();
+
+                if (!data.length) {
+                    resDiv.innerHTML = "אין נסיעות בשעה זו";
+                    return;
+                }
+
+                let html = "<ul>";
+                data.forEach(trip => {
+                    // וודא שאתה ניגש ל-trip.line.number
+                    html += `<li>קו ${trip.line.number} | יציאה: ${trip.departure_Time || trip.departureTime}</li>`;
+                });
+                resDiv.innerHTML = html + "</ul>";
+            } catch (e) { resDiv.innerText = "שגיאה במשיכת לוח זמנים"; }
+        }
+    </script>
+</body>
+
+</html>

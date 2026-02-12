@@ -1,0 +1,349 @@
+// --- Start of: BusService.java ---
+package com.example.public_transportation.Services;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.stereotype.Service;
+import com.example.public_transportation.Models.Bus;
+import com.example.public_transportation.Repositories.BusRepository;
+@Service
+public class BusService implements BusServiceInterface {
+    private final BusRepository busRepository;
+    public BusService(BusRepository busRepository) {
+        this.busRepository = busRepository;
+    }
+    public List<Bus> getAllBuses() {
+        return busRepository.findAll();
+    }
+    public Optional<Bus> getBusById(int id) {
+        return busRepository.findById(id);
+    }
+    public Bus addBus(Bus prod) {
+        return busRepository.save(prod);
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Services\BusService.java
+
+// --- Start of: BusServiceInterface.java ---
+package com.example.public_transportation.Services;
+import java.util.List;
+import java.util.Optional;
+import com.example.public_transportation.Models.Bus;
+public interface BusServiceInterface {
+    List<Bus> getAllBuses();
+    Optional<Bus> getBusById(int id);
+    Bus addBus(Bus bus);
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Services\BusServiceInterface.java
+
+// --- Start of: DriverService.java ---
+package com.example.public_transportation.Services;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.stereotype.Service;
+import com.example.public_transportation.Models.Driver;
+import com.example.public_transportation.Repositories.DriverRepository;
+@Service
+public class DriverService implements DriverServiceInterface {
+    private final DriverRepository driverRepository;
+    public DriverService(DriverRepository DriverRepository) {
+        this.driverRepository = DriverRepository;
+    }
+    public List<Driver> getAllDrivers() {
+        return driverRepository.findAll();
+    }
+    public Optional<Driver> getDriverById(int id) {
+        return driverRepository.findById(id);
+    }
+    public Driver addDriver(Driver driver) {
+        return driverRepository.save(driver);
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Services\DriverService.java
+
+// --- Start of: DriverServiceInterface.java ---
+package com.example.public_transportation.Services;
+import java.util.List;
+import java.util.Optional;
+import com.example.public_transportation.Models.Driver;
+public interface DriverServiceInterface {
+    List<Driver> getAllDrivers();
+    Optional<Driver> getDriverById(int id);
+    Driver addDriver(Driver driver);
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Services\DriverServiceInterface.java
+
+// --- Start of: EasyLineService.java ---
+package com.example.public_transportation.Services;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.stereotype.Service;
+import com.example.public_transportation.Models.Station;
+import com.example.public_transportation.Models.Station_Line;
+import com.example.public_transportation.Models.Travel;
+import com.example.public_transportation.Models.Line;
+import com.example.public_transportation.Repositories.LineRepository;
+import com.example.public_transportation.Repositories.TravelRepository;
+import org.springframework.transaction.annotation.Transactional;
+@Service
+@Transactional(readOnly = true)
+public class EasyLineService {
+    private final LineRepository lineRepository;
+    private final TravelRepository travelRepository;
+    public EasyLineService(LineRepository lineRepository, TravelRepository travelRepository) {
+        this.lineRepository = lineRepository;
+        this.travelRepository = travelRepository;
+    }
+    // חיפוש לפי תחנה
+    public LocalTime getArrivalTimeByStation(int stationNumber, int lineNumber) {
+        Line line = lineRepository.findByNumber(lineNumber)
+                .orElseThrow(() -> new IllegalArgumentException("קו לא קיים"));
+        List<Travel> upcomingTravels = travelRepository.findByLineAndDepartureTimeAfterOrderByDepartureTimeAsc(line,
+                LocalTime.now());
+        if (upcomingTravels.isEmpty()) {
+            throw new IllegalArgumentException("אין נסיעות זמינות לקו זה");
+        }
+        return upcomingTravels.get(0).calculateArrivalTime(stationNumber);
+    }
+    // חיפוש לפי קו - מיקום האוטובוסים
+    public List<Station> getBusLocationsByLine(int lineNumber) {
+        return travelRepository.findBusLocationsByLineAndDepartureTime(lineNumber, LocalTime.now());
+    }
+    // חיפוש לפי קו - שמיעת כל תחנות הקו
+    public List<Station_Line> getStationsByLine(int lineNumber) {
+        return lineRepository.findByNumber(lineNumber)
+                .<List<Station_Line>>map(Line::getStations)
+                .orElseGet(ArrayList::new);
+    }
+    // לוחות זמנים
+    public List<Travel> getAllTrips() {
+        List<Travel> allTrips = travelRepository.findAll();
+        return allTrips;
+    }
+    // לוחות זמנים - חיפוש לפי שעה (בלי לולאת for)
+    public List<Travel> getTripsByHour(LocalTime hour) {
+        return travelRepository.findByDepartureTime(hour);
+    }
+    // נסיעה אחרונה ביום (בלי לולאת for)
+    public Travel getLastTripOfTheDay() {
+        return travelRepository.findFirstByOrderByDepartureTimeDesc()
+                .orElse(null);
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Services\EasyLineService.java
+
+// --- Start of: LineService.java ---
+package com.example.public_transportation.Services;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.stereotype.Service;
+import com.example.public_transportation.Models.Line;
+import com.example.public_transportation.Repositories.LineRepository;
+@Service
+public class LineService implements LineServiceInterface {
+    private final LineRepository lineRepository;
+    public LineService(LineRepository lineRepository) {
+        this.lineRepository = lineRepository;
+    }
+    @Override
+    public List<Line> getAllLines() {
+        return lineRepository.findAll();
+    }
+    @Override
+    public Optional<Line> getLineById(int id) {
+        return lineRepository.findById(id);
+    }
+    @Override
+    public Line addLine(Line line) {
+        return lineRepository.save(line);
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Services\LineService.java
+
+// --- Start of: LineServiceInterface.java ---
+package com.example.public_transportation.Services;
+import java.util.List;
+import java.util.Optional;
+import com.example.public_transportation.Models.Line;
+public interface LineServiceInterface {
+    List<Line> getAllLines();
+    Optional<Line> getLineById(int id);
+    Line addLine(Line Line);
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Services\LineServiceInterface.java
+
+// --- Start of: Station_LineService.java ---
+package com.example.public_transportation.Services;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.stereotype.Service;
+import com.example.public_transportation.Models.Station;
+import com.example.public_transportation.Models.Line;
+import com.example.public_transportation.Models.StationLineKey;
+import com.example.public_transportation.Models.Station_Line;
+import com.example.public_transportation.Repositories.LineRepository;
+import com.example.public_transportation.Repositories.StationRepository;
+import com.example.public_transportation.Repositories.Station_LineRepository;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
+@Service
+public class Station_LineService implements Station_LineServiceInterface {
+    private final Station_LineRepository station_LineRepository;
+    private final StationRepository stationRepository;
+    private final LineRepository lineRepository;
+    public Station_LineService(Station_LineRepository station_LineRepository, StationRepository stationRepository,
+            LineRepository lineRepository) {
+        this.station_LineRepository = station_LineRepository;
+        this.stationRepository = stationRepository;
+        this.lineRepository = lineRepository;
+    }
+    @Override
+    public List<Station_Line> getAllStation_Linees() {
+        return station_LineRepository.findAll();
+    }
+    @Override
+    public Optional<Station_Line> getStation_LineById(StationLineKey id) {
+        return station_LineRepository.findById(id);
+    }
+    @Override
+    @Transactional
+    public Station_Line addStationToLine(int lineNumber, int stationNumber, int order) {
+        // 1. שליפת הקו והתחנה מהמסד
+        // וודא שהשימוש ב-lineRepository.findByNumber מחזיר Optional<Line>
+        Line line = lineRepository.findByNumber(lineNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Line not found with number: " + lineNumber));
+        // וודא שב-StationRepository קיימת המתודה findByStationNumber
+        Station station = stationRepository.findByNumber(stationNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Station not found with number: " + stationNumber));
+        // 2. יצירת המפתח המורכב
+        // וודא שב-StationLineKey יש @AllArgsConstructor של Lombok
+        StationLineKey key = new StationLineKey(station.getId(), line.getId());
+        // 3. יצירת האובייקט המקשר
+        Station_Line stationLine = Station_Line.builder()
+                .id(key)
+                .line(line)
+                .station(station)
+                .stationOrder(order)
+                .build();
+        // 4. שמירה - וודא שהזרקת את ה-Repository נכון ב-Constructor של ה-Service
+        return station_LineRepository.save(stationLine);
+    }
+    @Override
+    @Transactional
+    public Station_Line removeStationToLine(int lineId, int stationId, int position) {
+        // בדוק אם התחנה קיימת לפני שמבצעים את המחיקה
+        if (!station_LineRepository.existsById(new StationLineKey(stationId, lineId))) {
+            throw new EntityNotFoundException("Station_Line not found");
+        }
+        // 1. נשיג את כל התחנות הקיימות בקו מהמיקום הנבחר והלאה
+        List<Station_Line> subsequentStations = station_LineRepository
+                .findById_LineIdAndStationOrderGreaterThanEqual(lineId, position);
+        // אם הרשימה לא ריקה, עדכן את ה-stationOrder של התחנות
+        if (!subsequentStations.isEmpty()) {
+            for (Station_Line ls : subsequentStations) {
+                ls.setStationOrder(ls.getStationOrder() - 1);
+            }
+            station_LineRepository.saveAll(subsequentStations);
+        }
+        Station_Line sl = station_LineRepository.findByLineIdAndStationId(lineId, stationId);
+        // מחק את התחנה
+        station_LineRepository.delete(sl);
+        return sl;
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Services\Station_LineService.java
+
+// --- Start of: Station_LineServiceInterface.java ---
+package com.example.public_transportation.Services;
+import java.util.List;
+import java.util.Optional;
+import com.example.public_transportation.Models.StationLineKey;
+import com.example.public_transportation.Models.Station_Line;
+public interface Station_LineServiceInterface {
+    List<Station_Line> getAllStation_Linees();
+    Optional<Station_Line> getStation_LineById(StationLineKey id);
+    Station_Line addStationToLine(int lineId, int stationId, int position);
+    Station_Line removeStationToLine(int lineId, int stationId, int position);
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Services\Station_LineServiceInterface.java
+
+// --- Start of: StationService.java ---
+package com.example.public_transportation.Services;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.stereotype.Service;
+import com.example.public_transportation.Models.Station;
+import com.example.public_transportation.Repositories.StationRepository;
+@Service
+public class StationService implements StationServiceInterface {
+    private final StationRepository stationRepository;
+    public StationService(StationRepository stationRepository) {
+        this.stationRepository = stationRepository;
+    }
+    @Override
+    public List<Station> getAllStations() {
+        return stationRepository.findAll();
+    }
+    @Override
+    public Optional<Station> getStationById(int id) {
+        return stationRepository.findById(id);
+    }
+    @Override
+    public Station addStation(Station station) {
+        return stationRepository.save(station);
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Services\StationService.java
+
+// --- Start of: StationServiceInterface.java ---
+package com.example.public_transportation.Services;
+import java.util.List;
+import java.util.Optional;
+import com.example.public_transportation.Models.Station;
+public interface StationServiceInterface {
+    List<Station> getAllStations();
+    Optional<Station> getStationById(int id);
+    Station addStation(Station station);
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Services\StationServiceInterface.java
+
+// --- Start of: TravelService.java ---
+package com.example.public_transportation.Services;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.stereotype.Service;
+import com.example.public_transportation.Models.Travel;
+import com.example.public_transportation.Repositories.TravelRepository;
+@Service
+public class TravelService implements TravelServiceInterface {
+    private final TravelRepository travelRepository;
+    public TravelService(TravelRepository travelRepository) {
+        this.travelRepository = travelRepository;
+    }
+    @Override
+    public List<Travel> getAllTravels() {
+        return travelRepository.findAll();
+    }
+    @Override
+    public Optional<Travel> getTravelById(int id) {
+        return travelRepository.findById(id);
+    }
+    @Override
+    public Travel addTravel(Travel travel) {
+        return travelRepository.save(travel);
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Services\TravelService.java
+
+// --- Start of: TravelServiceInterface.java ---
+package com.example.public_transportation.Services;
+import java.util.List;
+import java.util.Optional;
+import com.example.public_transportation.Models.Travel;
+public interface TravelServiceInterface {
+    List<Travel> getAllTravels();
+    Optional<Travel> getTravelById(int id);
+    Travel addTravel(Travel travel);
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Services\TravelServiceInterface.java
+

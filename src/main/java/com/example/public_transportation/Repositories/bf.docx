@@ -1,0 +1,91 @@
+// --- Start of: BusRepository.java ---
+package com.example.public_transportation.Repositories;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import com.example.public_transportation.Models.Bus;
+@Repository
+public interface BusRepository extends JpaRepository<Bus, Integer>{}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Repositories\BusRepository.java
+
+// --- Start of: DriverRepository.java ---
+package com.example.public_transportation.Repositories;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import com.example.public_transportation.Models.Driver;
+@Repository
+public interface DriverRepository extends JpaRepository<Driver, Integer>{}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Repositories\DriverRepository.java
+
+// --- Start of: LineRepository.java ---
+package com.example.public_transportation.Repositories;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import com.example.public_transportation.Models.Line;
+import java.util.Optional;
+@Repository
+public interface LineRepository extends JpaRepository<Line, Integer>{
+    Optional<Line> findByNumber(int number);
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Repositories\LineRepository.java
+
+// --- Start of: Station_LineRepository.java ---
+package com.example.public_transportation.Repositories;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import com.example.public_transportation.Models.StationLineKey;
+import com.example.public_transportation.Models.Station_Line;
+@Repository
+public interface Station_LineRepository extends JpaRepository<Station_Line, StationLineKey> {
+    // שימוש ב-id_lineId כדי להגיד ל-Spring: "כנס ל-id (המפתח) וחפש שם את lineId"
+    List<Station_Line> findById_LineIdAndStationOrderGreaterThanEqual(Integer lineId, Integer stationOrder);
+    List<Station_Line> findById_LineIdAndStationOrderGreaterThan(Integer lineId, Integer stationOrder);
+    // מוצא את השורה הספציפית לפי המפתח המורכב
+    Optional<Station_Line> findById_LineIdAndId_StationId(Integer lineId, Integer stationId);
+    List<Station_Line> findById_LineIdAndStationOrderLessThan(int lineId, int stationOrder);
+    // בונוס: שליפת כל התחנות של קו מסוים מסודרות לפי הסדר
+    List<Station_Line> findById_LineIdOrderByStationOrderAsc(Integer lineId);
+    Station_Line findByLineIdAndStationId(int lineId, int stationId);
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Repositories\Station_LineRepository.java
+
+// --- Start of: StationRepository.java ---
+package com.example.public_transportation.Repositories;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import com.example.public_transportation.Models.Station;
+@Repository
+public interface StationRepository extends JpaRepository<Station, Integer> {
+        Optional<Station> findByNumber(int number);
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Repositories\StationRepository.java
+
+// --- Start of: TravelRepository.java ---
+package com.example.public_transportation.Repositories;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+import com.example.public_transportation.Models.Line;
+import com.example.public_transportation.Models.Station;
+import com.example.public_transportation.Models.Travel;
+@Repository
+public interface TravelRepository extends JpaRepository<Travel, Integer> {
+    @Query("SELECT t FROM Travel t WHERE t.line = ?1 AND t.departure_Time > ?2 ORDER BY t.departure_Time ASC")
+    List<Travel> findNextDepartureByLine(Line line, LocalTime currentTime);
+    @Query("SELECT s FROM Station s JOIN Station_Line sl ON s.id = sl.station.id JOIN Travel t ON sl.line.id = t.line.id WHERE t.line.id = ?1 AND t.departure_Time > ?2 ORDER BY sl.stationOrder ASC")
+    List<Station> findBusLocationsByLineAndDepartureTime(Integer lineNumber, LocalTime currentTime);
+    // מחליף את הלולאה ב-getTripsByHour
+    List<Travel> findByDepartureTime(LocalTime departureTime);
+    // מחליף את הלולאה ב-getLastTripOfTheDay
+    // מוצא את הנסיעה האחרונה לפי זמן היציאה (הראשון בסדר יורד)
+    Optional<Travel> findFirstByOrderByDepartureTimeDesc();
+    // לשימוש עתידי: מציאת נסיעות קרובות לקו מסוים
+    List<Travel> findByLineAndDepartureTimeAfterOrderByDepartureTimeAsc(Line line, LocalTime now);
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Repositories\TravelRepository.java
+

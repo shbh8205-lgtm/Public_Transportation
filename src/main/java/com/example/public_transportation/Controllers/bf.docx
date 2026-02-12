@@ -1,0 +1,284 @@
+// --- Start of: BusController.java ---
+package com.example.public_transportation.Controllers;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import com.example.public_transportation.Models.Bus;
+import com.example.public_transportation.Services.BusServiceInterface;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+@RestController
+@RequestMapping("/buses")
+public class BusController {
+    private final BusServiceInterface busService;
+    public BusController(BusServiceInterface BusService) {
+        this.busService = BusService;
+    }
+    @GetMapping("/all")
+    public ResponseEntity<List<Bus>> getAll() {
+        return ResponseEntity.ok().body(busService.getAllBuses());
+    }
+    @GetMapping("/byid/{id}")
+    public ResponseEntity<Bus> getById(@PathVariable int id) {
+        return busService.getBusById(id)
+                .map(bus -> ResponseEntity.ok().body(bus))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+    @PostMapping("/add")
+    public ResponseEntity<Bus> add(@RequestBody Bus bus) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(busService.addBus(bus));
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Controllers\BusController.java
+
+// --- Start of: DriverController.java ---
+package com.example.public_transportation.Controllers;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import com.example.public_transportation.Models.Driver;
+import com.example.public_transportation.Services.DriverServiceInterface;
+@RestController
+@RequestMapping("/drivers")
+public class DriverController {
+    private final DriverServiceInterface driverService;
+    public DriverController(DriverServiceInterface driverService) {
+        this.driverService = driverService;
+    }
+    @GetMapping("/all")
+    public ResponseEntity<List<Driver>> getAll() {
+        return ResponseEntity.ok().body(driverService.getAllDrivers());
+    }
+    @GetMapping("/byid/{id}")
+    public ResponseEntity<Driver> getById(@PathVariable int id) {
+        return driverService.getDriverById(id)
+                .map(driver -> ResponseEntity.ok().body(driver))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+    @PostMapping("/add")
+    public ResponseEntity<Driver> add(@RequestBody Driver driver) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(driverService.addDriver(driver));
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Controllers\DriverController.java
+
+// --- Start of: EasyLineController.java ---
+package com.example.public_transportation.Controllers;
+import java.time.LocalTime;
+import java.util.List;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+// import com.example.public_transportation.Models.Station;
+import com.example.public_transportation.Models.Station_Line;
+import com.example.public_transportation.Models.Travel;
+import com.example.public_transportation.Services.EasyLineService;
+// import org.springframework.web.bind.annotation.RequestBody;
+@RestController
+@RequestMapping("/easyline")
+public class EasyLineController {
+    private final EasyLineService easyLineService;
+    public EasyLineController(EasyLineService easyLineService) {
+        this.easyLineService = easyLineService;
+    }
+    // מתי הקו מגיע לתחנה?
+    @GetMapping("/findbystation")
+    public ResponseEntity<LocalTime> getArrivalTime(@RequestParam int stationNumber, @RequestParam int lineNumber) {
+        return ResponseEntity.ok(easyLineService.getArrivalTimeByStation(stationNumber, lineNumber));
+    }
+    // רשימת תחנות בקו
+    @GetMapping("/getstationsbyline")
+    public ResponseEntity<List<Station_Line>> getStationsByLine(@RequestParam int lineNumber) {
+        return ResponseEntity.ok(easyLineService.getStationsByLine(lineNumber));
+    }
+    // לוח זמנים לפי שעה
+    @GetMapping("/gettripsbyhour")
+    public ResponseEntity<List<Travel>> getTripsByHour(@RequestParam String hour) {
+        // המרה של המחרוזת מה-HTML לאובייקט זמן של Java
+        LocalTime time = LocalTime.parse(hour); 
+        return ResponseEntity.ok(easyLineService.getTripsByHour(time));
+    }
+    // הנסיעה האחרונה היום
+    @GetMapping("/lasttrip")
+    public ResponseEntity<Travel> getLastTrip() {
+        return ResponseEntity.ok(easyLineService.getLastTripOfTheDay());
+    }
+    // כל הנסיעות במערכת
+    @GetMapping("/alltrips")
+    public ResponseEntity<List<Travel>> getAllTrips() {
+        return ResponseEntity.ok(easyLineService.getAllTrips());
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Controllers\EasyLineController.java
+
+// --- Start of: LineController.java ---
+package com.example.public_transportation.Controllers;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import com.example.public_transportation.Models.Line;
+import com.example.public_transportation.Services.LineServiceInterface;
+import org.springframework.web.bind.annotation.RequestBody;
+@RestController
+@RequestMapping("/lines")
+public class LineController {
+    private final LineServiceInterface lineService;
+    public LineController(LineServiceInterface lineService) {
+        this.lineService = lineService;
+    }
+    @GetMapping("/all")
+    public ResponseEntity<List<Line>> getAll() {
+        return ResponseEntity.ok().body(lineService.getAllLines());
+    }
+    @GetMapping("/byid/{id}")
+    public ResponseEntity<Line> getById(@PathVariable int id) {
+        return lineService.getLineById(id)
+            .map(line -> ResponseEntity.ok().body(line))
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+    @PostMapping("/add")
+    public ResponseEntity<Line> add(@RequestBody Line line) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(lineService.addLine(line));
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Controllers\LineController.java
+
+// --- Start of: Station_LineController.java ---
+package com.example.public_transportation.Controllers;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import com.example.public_transportation.Models.Station_Line;
+import com.example.public_transportation.Services.Station_LineServiceInterface;
+@RestController
+@RequestMapping("/stationline")
+public class Station_LineController {
+    private final Station_LineServiceInterface slService;
+    public Station_LineController(Station_LineServiceInterface slService) {
+        this.slService = slService;
+    }
+    @PostMapping("/addstationtoline")
+    public ResponseEntity<Station_Line> add(@RequestParam int lineid, @RequestParam int stationid,
+            @RequestParam int position) {
+        return ResponseEntity.ok().body(slService.addStationToLine(lineid, stationid, position));
+    }
+    @PostMapping("/deletestationtoline")
+    public ResponseEntity<Station_Line> delete(@RequestParam int lineid, @RequestParam int stationid,
+            @RequestParam int position) {
+        return ResponseEntity.ok().body(slService.removeStationToLine(lineid, stationid, position));
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Controllers\Station_LineController.java
+
+// --- Start of: StationController.java ---
+package com.example.public_transportation.Controllers;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import com.example.public_transportation.Models.Station;
+import com.example.public_transportation.Services.StationServiceInterface;
+import org.springframework.web.bind.annotation.RequestBody;
+@RestController
+@RequestMapping("/stations")
+public class StationController {
+    private final StationServiceInterface stationService;
+    public StationController(StationServiceInterface stationService) {
+        this.stationService = stationService;
+    }
+    @GetMapping("/all")
+    public ResponseEntity<List<Station>> getAll() {
+        return ResponseEntity.ok().body(stationService.getAllStations());
+    }
+    @GetMapping("/byid/{id}")
+    public ResponseEntity<Station> getById(@PathVariable int id) {
+        return stationService.getStationById(id)
+            .map(station -> ResponseEntity.ok().body(station))
+            .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+    @PostMapping("/add")
+    public ResponseEntity<Station> add(@RequestBody Station station) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(stationService.addStation(station));
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Controllers\StationController.java
+
+// --- Start of: TravelController.java ---
+package com.example.public_transportation.Controllers;
+import java.time.LocalTime;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import com.example.public_transportation.Models.Travel;
+import com.example.public_transportation.Services.BusServiceInterface;
+import com.example.public_transportation.Services.DriverServiceInterface;
+import com.example.public_transportation.Services.LineServiceInterface;
+import com.example.public_transportation.Services.TravelServiceInterface;
+@RestController
+@RequestMapping("/travels")
+public class TravelController {
+    private final TravelServiceInterface travelService;
+    private final LineServiceInterface lineService;
+    private final BusServiceInterface busService;
+    private final DriverServiceInterface driverService;
+    public TravelController(TravelServiceInterface travelService, BusServiceInterface busService,
+            DriverServiceInterface driverService, LineServiceInterface lineService) {
+        this.travelService = travelService;
+        this.busService = busService;
+        this.driverService = driverService;
+        this.lineService = lineService;
+    }
+    @GetMapping("/all")
+    public ResponseEntity<List<Travel>> getAll() {
+        return ResponseEntity.ok().body(travelService.getAllTravels());
+    }
+    @GetMapping("/byid/{id}")
+    public ResponseEntity<Travel> getById(@PathVariable int id) {
+        return travelService.getTravelById(id)
+                .map(travel -> ResponseEntity.ok().body(travel))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+    @PostMapping("/add")
+    public ResponseEntity<Travel> createTravel(@RequestParam int busid, @RequestParam int driverid,
+            @RequestParam int lineid) {
+        Travel travel = Travel.builder()
+                .bus(busService.getBusById(busid).orElseThrow(() -> new RuntimeException("Bus not found")))
+                .driver(driverService.getDriverById(driverid)
+                        .orElseThrow(() -> new RuntimeException("Driver not found")))
+                .line(lineService.getLineById(lineid).orElseThrow(() -> new RuntimeException("Line not found")))
+                .departure_Time(LocalTime.now())
+                .build();
+        return ResponseEntity.status(HttpStatus.CREATED).body(travelService.addTravel(travel));
+    }
+}
+// Source Code Path: C:\Users\This User\Documents\שלי\JAVA_PROJECT\public_transportation\src\main\java\com\example\public_transportation\Controllers\TravelController.java
+
