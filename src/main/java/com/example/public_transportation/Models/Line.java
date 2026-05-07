@@ -2,6 +2,9 @@ package com.example.public_transportation.Models;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,5 +32,6 @@ public class Line {
 
     @OneToMany(mappedBy = "line")
     @OrderBy("stationOrder ASC")
+    @JsonIgnore
     private List<Station_Line> stations;
 }

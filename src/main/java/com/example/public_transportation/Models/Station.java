@@ -12,6 +12,7 @@ import lombok.Data;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Entity;
 
@@ -29,5 +30,6 @@ public class Station {
     
     @JsonBackReference
     @OneToMany(mappedBy = "station")
+    @JsonIgnore
     private List<Station_Line> lines;
 }
